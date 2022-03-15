@@ -105,6 +105,18 @@ h1 {
 
 ---
 
+# 1. Giới thiệu và tổng quan về Scipy
+
+- Lộ trình phát triển
+
+  - Hỗ trợ GPU
+  - Cải thiện hiệu năng
+  - Tăng cường hỗ trợ thống kê
+  - Hỗ trợ trên nhiều nền tảng
+  - Hỗ trợ CI/CD tốt hơn
+
+---
+
 # 2. Cấu trúc thư viện
 
 |Module| Miêu tả|
@@ -197,10 +209,11 @@ h1 {
 </style>
 |Hàm| Miêu tả|
 |-------|--------|
-|cluster.vq.whiten(obs, check_finite=True )|Chuẩn hóa các vector quan sát|
+|cluster.vq.whiten(obs, check_finite=True )|Chuẩn hóa các vector quan sát bằng cách chia từng phần tử cho độ lệch chuẩn của feature tương ứng|
 |cluster.vq.vq(obs, code_book, check_finite=True)|Gán các vector vào một codebook|
 |cluster.vq.kmeans(obs, k_or_guess, iter=20, thresh=1e-05, check_finite=True)| Phân cụm K-means|
 |cluster.vq.kmeans2(data,k,iter=10, thresh=1e-05, minit='random', missing='warn', check_finite=True)|Phân cụm K-means|
+
 ---
 
 # cluster
@@ -242,6 +255,151 @@ h1 {
 
 ---
 
+# cluster
+
+- Ví dụ:
+```python
+import numpy as np
+from scipy.cluster.vq import vq, kmeans, whiten, kmeans2
+import matplotlib.pyplot as plt
+pts = 50
+rng = np.random.default_rng()
+a = rng.multivariate_normal([0, 0], [[4, 1], [1, 4]], size=pts)
+b = rng.multivariate_normal([30, 10],
+                            [[10, 2], [2, 1]],
+                            size=pts)
+features = np.concatenate((a, b))
+
+whitened = whiten(features)
+
+codebook, distortion = kmeans2(whitened, 2)
+
+clusters = vq(whitened, codebook)[0]
+color_map = {0: "c", 1: "b"}
+
+
+colors_fn = np.vectorize(lambda x: color_map[x])
+colors = colors_fn(clusters)
+plt.scatter(whitened[:, 0], whitened[:, 1], c=colors)
+plt.scatter(codebook[:, 0], codebook[:, 1], c='r')
+plt.show()
+```
+
+---
+
+# cluster
+
+<img src="images/cluster-1.png">
+
+
+---
+
+# cluster
+
+- Một số hàm phân cụm phẳng từ phân cụm phân cấp:
+
+|Hàm| Miêu tả|
+|-----|------|
+|scipy.cluster.hierachy.fcluster(Z, t[, criterion, depth, R, monocrit])|Tạo thành các cụm phẳng từ phân cụm phân cấp được xác định bởi ma trận liên kết đã cho|
+|scipy.cluster.hierachy.fclusterdata(X, t[, criterion, metric, …])| Phân cụm dữ liệu sử dụng độ đo cho trước|
+|scipy.cluster.hierachy.leaders(Z, T)| Trả về điểm gốc của phân cụm phân cấp|
+
+---
+
+# cluster
+
+- Ví dụ:
+```python
+from scipy.cluster.hierarchy import ward, fcluster
+from scipy.spatial.distance import pdist
+a = rng.multivariate_normal([0, 0], [[4, 1], [1, 4]], 
+                            size=pts)
+b = rng.multivariate_normal([30, 10],
+                            [[10, 2], [2, 1]],
+                            size=pts)
+c = rng.multivariate_normal([15, 15],
+                            [[5, 8], [10, 3]],
+                            size=pts)
+X = np.concatenate((a, b, c))
+Z = ward(pdist(X))
+clusters = fcluster(Z, t=35, criterion='distance')
+colors_map = ['#2200CC' ,'#D9007E' ,'#FF6600' ,'#FFCC00' ,'#ACE600' ,'#0099CC' ,
+    '#8900CC' ,'#FF0000' ,'#FF9900' ,'#FFFF00' ,'#00CC01' ,'#0055CC']
+colors_fn = np.vectorize(lambda x: colors_map[x])
+colors = colors_fn(clusters)
+
+plt.scatter(X[:, 0], X[:, 1], c=colors)
+plt.show()
+```
+
+---
+
+# cluster
+
+<img src="images/cluster-2.png">
+
+---
+
+# cluster
+
+- Phân cụm phân cấp:
+
+<img src="images/cluster-3.png" width="500" height="750">
+
+
+<img src="images/cluster-4.jpg" >
+
+---
+
+# cluster
+
+- Một số hàm phân cụm phân cấp:
+
+|Hàm| Miêu tả|
+|-----|------|
+|scipy.cluster.hierachy.linkage(y[, method, metric, optimal_ordering])|Thực hiện phân cụm phân cấp/kết tụ|
+|scipy.cluster.hierachy.single(y)|Thực hiện phân cụm phân cấp dựa trên khoảng cách gần nhất của các điểm giữa các cụm|
+|scipy.cluster.hierachy.complete(y)|Thực hiện phân cụm phân cấp dựa trên khoảng cách xa nhất của các điểm giữa các cụm|
+|scipy.cluster.hierachy.average(y)|Thực hiện phân cụm phân cấp dựa trên khoảng cách trung bình của các điểm giữa các cụm|
+|scipy.cluster.hierachy.weighted(y)|Thực hiện phân cụm phân cấp dựa trên trọng số của các điểm giữa các cụm|
+|scipy.cluster.hierachy.centroid(y)|Thực hiện phân cụm phân cấp dựa trên khoảng cách giữa các trọng tâm của các cụm|
+
+---
+layout: two-cols
+---
+
+# cluster
+
+```python
+from scipy.cluster.hierarchy import dendrogram, linkage
+from matplotlib import pyplot as plt
+a = rng.multivariate_normal([0, 0], [[4, 1], [1, 4]], 
+                            size=10)
+b = rng.multivariate_normal([30, 10],
+                            [[10, 2], [2, 1]],
+                            size=10)
+c = rng.multivariate_normal([15, 15],
+                            [[5, 8], [10, 3]],
+                            size=10)
+X = np.concatenate((a, b, c))
+Z = linkage(X, 'ward')
+fig = plt.figure(figsize=(25, 10))
+dn = dendrogram(Z)
+Z = linkage(X, 'single')
+fig = plt.figure(figsize=(25, 10))
+dn = dendrogram(Z)
+plt.show()
+```
+
+::right::
+
+<img src="images/cluster-5.png">
+
+<img src="images/cluster-6.png">
+
+
+---
+
 # fft
 
 - Module cho phép biển đổi Fourier rời rạc, phép biển đổi cosine,…
@@ -249,11 +407,11 @@ h1 {
 - Ảnh fourier $y[k]$ của dãy $x[k]$ độ dài $N$:
 
 $$
-y[k] = \sum_{n = 0}^{N - 1} \exp(-2 \pi j \frac{kn}{N})
+y[k] = \sum_{n = 0}^{N - 1} \exp\Big(-2 \pi j \frac{kn}{N}\Big)x[n]
 $$
 
 - Và phép biến đổi ngược
-$$x[n] = \frac{1}{N} \sum_{k = 0} ^ {N - 1} \exp(2 \pi j \frac{kn}{N})$$
+$$x[n] = \frac{1}{N} \sum_{k = 0} ^ {N - 1} \exp\Big(2 \pi j \frac{kn}{N}\Big)y[k]$$
 
 <style>
 h1 {
@@ -267,6 +425,21 @@ h1 {
 }
 
 </style>
+---
+
+# fft
+
+- Một số hàm:
+
+|Hàm| Miêu tả|
+|-----|-----|
+|fft(x[, n, axis, norm, overwrite_x, ...])| Thực hiện phép biển đổi Fourier cho tín hiệu 1 chiều|
+|ifft(x[, n, axis, norm, overwrite_x, ...])| Thực hiện phép biển đổi Fourer nghịch cho tín hiệu 1 chiều|
+|rfft(x[, n, axis, norm, overwrite_x, ...])| Thực hiện phép biến đổi Fourier cho tín hiệu thực|
+|irfft(x[, n, axis, norm, overwrite_x, ...])| Thực hiện phép biến đổi Fourier nghịch cho tín hiệu thực|
+|fft2(x[, s, axes, norm, overwrite_x, ...])| Thực hiện phép biển đổi Fourier cho tín hiệu 2 chiều|
+|ifft2(x[, s, axes, norm, overwrite_x, ...])| Thực hiện phép biến đổi Fourier nghịch cho tín hiệu 2 chiều|
+
 ---
 
 # fft
@@ -346,6 +519,239 @@ h1 {
   -moz-text-fill-color: transparent;
 }
 </style>
+---
+
+# fft
+
+- Ví dụ:
+
+```python
+from scipy.fft import fftfreq
+freq = fftfreq(8, 0.01)
+freq
+```
+
+```python
+array([  0. ,  12.5,  25. ,  37.5, -50. , -37.5, -25. , -12.5])
+```
+
+```python
+from scipy.fft import fftshift
+freq = fftfreq(8, 0.01)
+freq
+fftshift(freq)
+```
+
+```python
+array([-50. , -37.5, -25. , -12.5,   0. ,  12.5,  25. ,  37.5])
+```
+
+
+---
+
+# fft
+
+```python
+from scipy.fft import fft, rfft, irfft
+x = np.array([1.0, 2.0, 1.0, -1.0, 1.5, 1.0])
+fftfreq(x.shape[0]), fft(x)
+```
+
+```python
+(array([ 0.        ,  0.16666667,  0.33333333, -0.5       , -0.33333333,
+        -0.16666667]),
+ array([ 5.5 -0.j        ,  2.25-0.4330127j , -2.75-1.29903811j,
+         1.5 -0.j        , -2.75+1.29903811j,  2.25+0.4330127j ]))
+```
+
+```python
+yr = rfft(x)
+yr
+```
+
+```python
+array([ 5.5 +0.j        ,  2.25-0.4330127j , -2.75-1.29903811j,
+        1.5 +0.j        ])
+```
+
+```python
+irfft(yr)
+```
+
+```python
+array([ 1. ,  2. ,  1. , -1. ,  1.5,  1. ])
+```
+
+---
+layout: two-cols
+---
+
+# fft
+
+```python
+from scipy.fft import fft, fftfreq, fftshift
+import matplotlib.pyplot as plt
+N = 400
+T = 1.0 / 800.0
+x = np.linspace(0.0, N*T, N, endpoint=False)
+y = np.exp(50.0 * 1.j * 2.0*np.pi*x) + 0.5*np.exp(-80.0 * 1.j * 2.0*np.pi*x)
+yf = fft(y)
+xf = fftfreq(N, T)
+xf = fftshift(xf)
+yplot = fftshift(yf)
+fig, axs = plt.subplots(2)
+axs[0].plot(x, y)
+axs[0].grid()
+axs[1].plot(xf, 1.0/N * np.abs(yplot))
+axs[1].grid()
+plt.show()
+```
+
+::right::
+
+<img src="images/fft-2.png">
+
+---
+
+# fft
+
+## Phép biển đổi cosine
+
+- Là một phép biến đổi gần tương tự như phép biến đổi Fourier nhưng chỉ sử dụng cho tín hiệu thực
+
+- Có nhiều loại biến đổi cosine nhưng chỉ có 4 loại phổ biến
+
+- Thường được dùng trong các bài toán phân tích tín hiệu, xử lý hình ảnh, nén tín hiệu
+
+---
+
+# fft
+
+- Biến đổi cosine loại I (```norm=None```):
+
+$$y[k]=x[0] + (-1)^kx[N-1]+2\sum_{n=1}^{N-2}x[n]\cos\big(\dfrac{\pi nk}{N-1}\big)$$
+
+- Biến đổi cosine loại II (```norm=None```):
+
+$$y[k]=2\sum_{n=0}^{N-1}x[n]\cos\Big(\dfrac{\pi(2n+1)k}{N}\Big)$$
+
+- Biến đổi cosine loại III (```norm=None```):
+
+$$y[k]=x[0]+2\sum_{n=1}^{N-1}x[n]\cos\Big(\dfrac{\pi(2k+1)n}{N}\Big)$$
+
+
+---
+
+# fft
+
+- Biến đổi cosine loại III (```norm="ortho"```):
+
+$$y[k]=\frac{x[0]}{\sqrt{N}}+\frac{2}{\sqrt{N}}\sum_{n=1}^{N-1}x[n]\cos\Big(\dfrac{\pi(2k+1)n}{N}\Big)$$
+
+- Biến đổi cosine loại IV (```norm=None```):
+
+$$y[k]=2\sum_{n=0}^{N-1}x[n]\cos\Big(\dfrac{\pi(2k+1)(2n+1)}{N}\Big)$$
+
+- Biến đổi cosine loại IV (```norm="ortho"```):
+
+$$y[k]=\sqrt{\frac{2}{N}}\sum_{n=0}^{N-1}x[n]\cos\Big(\dfrac{\pi(2k+1)(2n+1)}{N}\Big)$$
+
+- Biến đổi cosine loại II và III là biến đổi ngược của nhau
+
+---
+
+# fft
+
+- Các hàm biến đổi cosine rời rạc:
+
+|Hàm| Miêu tả|
+|-----|-----|
+|dct(x[, type, n, axis, norm, overwrite_x, ...])| Thực hiện biến đổi cosine rời rạc cho tín hiệu đầu vào|
+|idct(x[, type, n, axis, norm, overwrite_x, ...])|Thực hiện biến đổi cosine ngược|
+
+
+---
+
+# fft
+
+- Ví dụ
+
+```python
+from scipy.fft import dct, idct
+x = np.array([1.0, 2.0, 1.0, -1.0, 1.5])
+y = dct(x, type=2, norm='ortho')
+z = dct(y, type=3, norm='ortho')
+print(y, z)
+```
+
+```python
+[ 2.01246118  0.81449363  0.45127314 -1.99037688  0.60938703] [ 1.   2.   1.  -1.   1.5]
+```
+
+```python
+e = dct(x, type=2, norm=None)
+t = dct(e, type=3, norm=None)
+print(e, t)
+```
+
+```python
+[ 9.          2.575655    1.42705098 -6.29412435  1.92705098] [ 10.  20.  10. -10.  15.]
+```
+
+```python
+idct(dct(x, type=2), type=2)
+```
+
+```python
+array([ 1. ,  2. ,  1. , -1. ,  1.5])
+```
+
+---
+layout: two-cols
+---
+
+
+# fft
+
+- Ví dụ: Ứng dụng cho bài toán nén dữ liệu
+
+```python
+from scipy.fft import dct, idct
+import matplotlib.pyplot as plt
+N = 100
+t = np.linspace(0,20,N, endpoint=False)
+x = np.exp(-t/3)*np.cos(2*t)
+y = dct(x, norm='ortho')
+window = np.zeros(N)
+window[:20] = 1
+yr = idct(y*window, norm='ortho')
+sum(abs(x-yr)**2) / sum(abs(x)**2)
+```
+```python
+0.0009872817275276078
+```
+
+```python
+window = np.zeros(N)
+window[:15] = 1
+yrr = idct(y*window, norm='ortho')
+sum(abs(x-yrr)**2) / sum(abs(x)**2)
+plt.plot(t, x, '-bx')
+plt.plot(t, yr, 'ro')
+plt.plot(t, yrr, 'g+')
+plt.legend(['x', '$x_{20}$', '$x_{15}$'])
+plt.grid()
+plt.show()
+```
+
+```python
+0.06196643004256714
+```
+
+::right::
+
+<img src="images/fft-4.png">
+
 ---
 
 # special
@@ -530,6 +936,43 @@ $$y[M+K]=\sum_{k=K}^{K}x[k]h[M+K-k]=x[K]h[K]$$
 <style>
 .katex { font-size: 0.8em; }
 </style>
+
+---
+layout: two-cols
+---
+
+# signal
+
+- Ví dụ áp dụng tích chập cho ảnh:
+
+```python
+import numpy as np
+from scipy import signal, misc
+import matplotlib.pyplot as plt
+image = misc.face(gray=True)
+w = np.random.rand(50, 50)
+image_new = signal.fftconvolve(image, w)
+plt.figure()
+plt.imshow(image)
+plt.gray()
+plt.title('Original image')
+plt.show()
+```
+
+```python
+plt.figure()
+plt.imshow(image_new)
+plt.gray()
+plt.title('Filtered image')
+plt.show()
+```
+
+::right::
+
+<img src="images/signal-1.png">
+
+<img src="images/signal-2.png">
+
 ---
 
 # signal
@@ -601,6 +1044,100 @@ $$H(z)=\frac{Y(z)}{X(z)}=\frac{\sum_{k=0}^{k=M}a_k z^{-k}}{\sum_{k=0}^{k=N}a_k z
 |signal.step(system, X0=None, T=None, N=None)| Đáp ứng của hệ thống trên miền thời gian với đầu vào là hàm bước nhảy đơn vị (hàm Heaviside)|
 |signal.tf2ss(num, den)|Chuyển biểu diễn từ dạng hàm truyền sang không gian trạng thái|
 |signal.bode(system, w=None, n=100)|Tính đồ thị biên, pha (đồ thị Bode) của hệ thống|
+
+
+---
+
+# signal
+
+```python
+x = np.array([1., 0., 0., 0.])
+b = np.array([1.0/2, 1.0/4])
+a = np.array([1.0, -1.0/3])
+signal.lfilter(b, a, x)
+```
+```python
+array([0.5       , 0.41666667, 0.13888889, 0.0462963 ])
+```
+
+---
+layout: two-cols
+---
+
+# signal
+
+- Cho hàm truyền $G(s)=\dfrac{s^2+3s+3}{s^2+2s+1}$
+
+```python
+num = [1, 3, 3]
+den = [1, 2, 1]
+sys = signal.TransferFunction(num, den)
+t, y = signal.step(sys)
+plt.plot(t, y)
+plt.xlabel('Time [s]')
+plt.ylabel('Amplitude')
+plt.title('Step response')
+plt.grid()
+```
+
+::right::
+
+<img src="images/signal-3.png">
+
+---
+layout: two-cols
+---
+
+# signal
+
+- Cho một tín hiệu $u(t)=\cos(4.2\pi t)+0.6\sin(40.2\pi t) + 0.5\cos(80.2\pi t)$ qua một bộ lọc thông thấp có hàm truyền $G(s)=\dfrac{5}{1+\frac{1}{5}s}$:
+
+```python
+num = [5]
+den = [1/5, 1]
+sys = signal.TransferFunction(num, den)
+t = np.linspace(0, 1.25, 500, endpoint=False)
+u = (np.cos(2*np.pi*4*t) + 0.6*np.sin(2*np.pi*40*t) +
+     0.5*np.cos(2*np.pi*80*t))
+tout, yout, xout = signal.lsim(sys, U=u, T=t)
+fig, axs = plt.subplots(2)
+axs[0].plot(t, u, 'r', alpha=0.5, linewidth=1, label='input')
+axs[1].plot(tout, yout, 'k', linewidth=1.5, label='output')
+axs[0].grid()
+axs[1].grid()
+plt.show()
+```
+
+::right::
+
+<img src="images/signal-4.png">
+
+---
+layout: two-cols
+---
+
+# signal
+
+- Bộ lọc Bessel cho tín hiệu $u(t)=\cos(4.2\pi t)+0.6\sin(40.2\pi t) + 0.5\cos(80.2\pi t)$:
+
+```python
+from scipy.signal import bessel, lsim
+b, a = bessel(N=5, Wn=2*np.pi*12, btype='lowpass', analog=True)
+t = np.linspace(0, 1.25, 500, endpoint=False)
+u = (np.cos(2*np.pi*4*t) + 0.6*np.sin(2*np.pi*40*t) +
+     0.5*np.cos(2*np.pi*80*t))
+tout, yout, xout = lsim((b, a), U=u, T=t)
+plt.plot(t, u, 'r', alpha=0.5, linewidth=1, label='input')
+plt.plot(tout, yout, 'k', linewidth=1.5, label='output')
+plt.legend(loc='best', shadow=True, framealpha=1)
+plt.grid(alpha=0.3)
+plt.xlabel('t')
+plt.show()
+```
+
+::right::
+
+<img src="images/signal-5.png">
 
 
 ---
@@ -690,6 +1227,11 @@ $$\lVert x \rVert=\begin{cases} \max \lvert x_i \rvert & \text{ord}=\text{inf} \
   - Ma trận:
 
 $$\lVert A \rVert=\begin{cases} \max_i \sum_j \lvert a_{ij} \rvert & \text{ord} = \text{inf} \\ \min_i \sum_j \lvert a_{ij} \rvert & \text{ord} = -\text{inf} \\ \max_j \sum_i \lvert a_{ij} \rvert & \text{ord} = 1 \\ \min_j \sum_i \lvert a_{ij} \rvert & \text{ord} = -1 \\ \max \sigma_i & \text{ord} = 2 \\ \sqrt{\text{trace}(A^HA)} & \text{ord} = "fro"\end{cases}$$
+
+
+<style>
+.katex { font-size: 0.9em; }
+</style>
 
 ---
 
@@ -892,6 +1434,10 @@ $$\sinh(\bold{A})=\dfrac{e^\bold{A}-e^{-\bold{A}}}{2}$$
 - Hàm $\cosh(x)$ cho $\bold{A}$:
 $$\cosh(\bold{A})=\dfrac{e^\bold{A}+e^{-\bold{A}}}{2}$$
 
+<style>
+  .katex {font-size: 1.0em;}
+</style>
+
 ---
 
 # linalg
@@ -935,6 +1481,63 @@ array([0.25375345+0.j, 0.87379738+0.j, 0.98763955+0.j])
 linalg.eigvals(B)
 array([0.25375345+0.j, 0.87379738+0.j, 0.98763955+0.j])
 ```
+
+---
+
+# sparse
+
+- Trong nhiều bài toán thực tế, xuất hiện những ma trận có kích thước lớn, nhưng chỉ một số ít những phần tử khác 0, các ma trận này được gọi là các ma trận thưa (sparse).
+- Việc lưu trữ toàn bộ ma trận này tốn kém.
+- Thay vì lưu trữ toàn bộ ma trận, chỉ cần lưu kích thước, vị trí các phần tử khác 0 và giá trị tại vị trí tương ứng
+- Có nhiều cách để biểu diễn một ma trận thưa:
+
+  - csc_matrix: Compressed Sparse Column format
+  - csr_matrix: Compressed Sparse Row format
+  - bsr_matrix: Block Sparse Row format
+  - lil_matrix: List of Lists format
+  - dok_matrix: Dictionary of Keys format
+  - coo_matrix: COOrdinate format (aka IJV, triplet format)
+  - dia_matrix: DIAgonal format
+
+---
+
+# sparse
+
+## Compressed Sparse Column
+
+<img src="images/sparse-csc.gif">
+
+---
+
+# sparse
+
+## Compressed Sparse Row
+
+<img src="images/sparse-csr.gif">
+
+---
+
+# sparse
+
+## List of Lists
+
+<img src="images/sparse-lil.gif">
+
+---
+
+# sparse
+
+## COOrdinate
+
+<img src="images/sparse-coo.gif">
+
+---
+
+# sparse
+
+## DIAgonal
+
+<img src="images/sparse-dia.gif">
 
 ---
 
@@ -1301,7 +1904,7 @@ nonlinear_constraint = NonlinearConstraint(cons_f, -np.inf, 1, jac='2-point', he
 ```
 
 ```python
-nonlinear_constraint = NonlinearConstraint(cons_f, -np.inf, 1, jac='2-point', hess='2-point')
+nonlinear_constraint = NonlinearConstraint(cons_f, -np.inf, 1, jac='2-point', hess='2-point') # Khi chạy minimize sẽ lỗi
 ```
 
 ---
@@ -1314,7 +1917,7 @@ nonlinear_constraint = NonlinearConstraint(cons_f, -np.inf, 1, jac='2-point', he
 
 $$\min_x f(\bold{x})$$
 
-$$\begin{cases}\bold{c}^l \leq c(\bold{x}) \leq \bold{c}^u) \\ \bold{x}_l \leq \bold{x} \leq \bold{x}^u\end{cases}$$
+$$\begin{cases}\bold{c}^l \leq c(\bold{x}) \leq \bold{c}^u) \\ \bold{x}_l \leq \bold{x} \leq \bold{x}_u\end{cases}$$
 
 ```python
 x0 = np.array([0.5, 0])
@@ -1560,7 +2163,9 @@ res.x
 
 ---
 
-# Tìm nghiệm của phương trình
+# optimize
+
+## Tìm nghiệm của phương trình
 
 - Giải phương trình $f(x)=0$
 - Giải phương trình $f(x)=g(x)$

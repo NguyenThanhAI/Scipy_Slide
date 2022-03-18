@@ -127,9 +127,8 @@ h1 {
 |special| Các hàm toàn học đặc biệt|
 |signal| Các thuật toàn xử lý tín hiệu|
 |linagl|Các thuật toán đại số tuyến tính|
-|optimize| Các thuật toán tối ưu hóa và tìm root|
 |sparse| Các chương trình liên quan đến ma trận thưa|
-|weave| Công cụ cho phép sử dụng C/C++ trong code Python|
+|optimize| Các thuật toán tối ưu hóa và tìm root|
 
 
 <style>
@@ -152,11 +151,12 @@ h1 {
 |------|---------|
 |constants|Các hằng số toán học và vật lý|
 |integrate|Các hàm tính tích phân|
+|interpolate| Các hàm liên quan đến nội suy|
+|stats| Các hàm, các phân phối về thống kê|
 |io|Thao tác nhập xuất dữ liệu|
 |ndimage|Các thuật toán xử lý ảnh|
 |odr|Hồi quy khoảng cách trực giao|
 |spatial| Các thuật toàn và cấu trực dữ liệu về không gian|
-|stats| Các hàm, các phân phối về thống kê|
 |misc| Một số hàm, công cụ khác|
 
 <style>
@@ -403,6 +403,10 @@ plt.show()
 # fft
 
 - Module cho phép biển đổi Fourier rời rạc, phép biển đổi cosine,…
+
+- Một tín hiệu $u(t)$ bất kỳ luôn có thể phân tích thành tổng các tín hiệu điều hóa với tần số nhất định
+
+$$u(t)=A_0+\sum_{n=1}^{\infty}A_n\sin(n\omega t + \varphi_n)$$
 
 - Ảnh fourier $y[k]$ của dãy $x[k]$ độ dài $N$:
 
@@ -1503,17 +1507,38 @@ array([0.25375345+0.j, 0.87379738+0.j, 0.98763955+0.j])
 
 # sparse
 
-## Compressed Sparse Column
+## COOrdinate
 
-<img src="images/sparse-csc.gif">
+<img src="images/sparse-coo.gif">
 
 ---
 
 # sparse
 
-## Compressed Sparse Row
+```python
+import numpy as np
+from scipy import sparse
+row = [1, 3, 0, 2, 4]
+col = [1, 4, 2, 3, 3]
+data = [2, 5, 9, 1, 6]
+coo = sparse.coo_matrix((data, (row, col)), shape=(6, 7))
+print(coo)
+coo.toarray()
+```
+```python
+  (1, 1)	2
+  (3, 4)	5
+  (0, 2)	9
+  (2, 3)	1
+  (4, 3)	6
+array([[0, 0, 9, 0, 0, 0, 0],
+       [0, 2, 0, 0, 0, 0, 0],
+       [0, 0, 0, 1, 0, 0, 0],
+       [0, 0, 0, 0, 5, 0, 0],
+       [0, 0, 0, 6, 0, 0, 0],
+       [0, 0, 0, 0, 0, 0, 0]])
+```
 
-<img src="images/sparse-csr.gif">
 
 ---
 
@@ -1527,9 +1552,87 @@ array([0.25375345+0.j, 0.87379738+0.j, 0.98763955+0.j])
 
 # sparse
 
-## COOrdinate
+```python
+lil = sparse.lil_matrix((6, 5), dtype=np.int)
+lil[(0, -1)] = -1
+lil[3, (0, 4)] = [-2] * 2
+lil.setdiag(8, k=0)
+lil[:, 2] = np.arange(lil.shape[0]).reshape(-1, 1) + 1
+lil.toarray()
+```
 
-<img src="images/sparse-coo.gif">
+```python
+array([[ 8,  0,  1,  0, -1],
+       [ 0,  8,  2,  0,  0],
+       [ 0,  0,  3,  0,  0],
+       [-2,  0,  4,  8, -2],
+       [ 0,  0,  5,  0,  8],
+       [ 0,  0,  6,  0,  0]])
+```
+
+---
+
+# sparse
+
+## Compressed Sparse Row
+
+<img src="images/sparse-csr.gif">
+
+---
+
+# sparse
+
+```python
+indptr = np.array([0, 2, 3, 3, 3, 6, 6, 7])
+indices = np.array([0, 2, 2, 2, 3, 4, 3])
+data = np.array([8, 2, 5, 7, 1, 2, 9])
+
+csr = sparse.csr_matrix((data, indices, indptr))
+
+csr.toarray()
+```
+```python
+array([[8, 0, 2, 0, 0],
+       [0, 0, 5, 0, 0],
+       [0, 0, 0, 0, 0],
+       [0, 0, 0, 0, 0],
+       [0, 0, 7, 1, 2],
+       [0, 0, 0, 0, 0],
+       [0, 0, 0, 9, 0]])
+```
+
+---
+
+# sparse
+
+## Compressed Sparse Column
+
+<img src="images/sparse-csc.gif">
+
+---
+
+# sparse
+
+```python
+csc = sparse.csc_matrix(csr)
+print(csc.indptr)
+print(csc.indices)
+print(csc.data)
+print(csc.toarray())
+```
+
+```python
+[0 1 1 4 6 7]
+[0 0 1 4 4 6 4]
+[8 2 5 7 1 9 2]
+[[8 0 2 0 0]
+ [0 0 5 0 0]
+ [0 0 0 0 0]
+ [0 0 0 0 0]
+ [0 0 7 1 2]
+ [0 0 0 0 0]
+ [0 0 0 9 0]]
+```
 
 ---
 
@@ -1538,6 +1641,50 @@ array([0.25375345+0.j, 0.87379738+0.j, 0.98763955+0.j])
 ## DIAgonal
 
 <img src="images/sparse-dia.gif">
+
+---
+
+# sparse
+
+```python
+data = np.arange(15).reshape(3, -1) + 1
+offsets = np.array([0, -3, 2])
+print(data)
+dia = sparse.dia_matrix((data, offsets), shape=(7, 5))
+print(dia.toarray())
+```
+
+```python
+[[ 1  2  3  4  5]
+ [ 6  7  8  9 10]
+ [11 12 13 14 15]]
+[[ 1  0 13  0  0]
+ [ 0  2  0 14  0]
+ [ 0  0  3  0 15]
+ [ 6  0  0  4  0]
+ [ 0  7  0  0  5]
+ [ 0  0  8  0  0]
+ [ 0  0  0  9  0]]
+```
+
+
+---
+
+# sparse
+
+- Sparse cũng có các hàm riêng về đại số tuyến tính cho ma trận thưa:
+
+|Hàm| Miêu tả|
+|-----|-----|
+|scipy.sparse.spmatrix.mean| Tính trung bình của ma trận thưa|
+|scipy.sparse.spmatrix.getcol| Lấy một cột của ma trận thưa|
+|scipy.sparse.isspmatrix_coo| Kiểm tra có phải ma trận định dạng Coordinate|
+|scipy.sparse.hstack| Ghép ma trận theo chiều ngang|
+|scipy.sparse.linalg.svds| Phân tích SVD cho ma trận thưa|
+|scipy.sparse.linalg.inv| Tính ma trận nghịch đảo cho ma trận thưa|
+|scipy.sparse.linalg.norm| Tính chuẩn cho ma trận thưa|
+|scipy.sparse.csgraph.dijkstra| Tính khoảng cách nhỏ nhất giữa các đỉnh sử dụng thuật toán Dijktra|
+|scipy.sparse.csgraph.bellman_ford| Tính khoảng cách nhỏ nhất giữa các đỉnh sử dụng thuật toán Bellman-Ford|
 
 ---
 
@@ -1847,7 +1994,7 @@ $$ \begin{cases}x_0 \leq 1 \\ -0.5 \leq x_1 \leq 2\end{cases}$$
 
 ```python
 from scipy.optimize import Bounds
-bounds = Bounds([0, -0.5], [1.0, 2.0])
+bounds = Bounds([-np.inf, -0.5], [1.0, 2.0])
 ```
 ---
 
@@ -2130,7 +2277,7 @@ array([ 0.19280596,  0.19130423,  0.12306063,  0.13607247])
 
 ## Tối ưu hóa hàm đơn biến
 
-- Có hai thuật toán Brend và Gold
+- Có hai thuật toán Brent và Gold
 - Gold chủ yếu dùng trong học thuật, ít sử dụng trong thực tiễn
 
 - Ví dụ:
@@ -2242,7 +2389,7 @@ $$\tag{1}\min_x \bold{c}^T\bold{x}\\\begin{cases} \bold{A}_{ub}\bold{x} \leq \bo
 
 $$\max_{x_1, x_2, x_3, x_4} 29x_1+45x_2$$
 
-$$\begin{cases} x_1 - 2x_2 - 3x_3 \leq 5 \\ 2x_1 - 3x_2 -7x_3 + 3x_4 \geq 10 \\ 2x_1 + 8x_2 + x_3 = 60 \\ 4x_1 + 4_x2 + x_4 = 60 \\ 0 \leq x_1 \\ 0 \leq x_2 \leq 6 \\ x_3 \leq 0.5 \\ -3 \leq x_4\end{cases}$$
+$$\begin{cases} x_1 - 2x_2 - 3x_3 \leq 5 \\ 2x_1 - 3x_2 -7x_3 + 3x_4 \geq 10 \\ 2x_1 + 8x_2 + x_3 = 60 \\ 4x_1 + 4x_2 + x_4 = 60 \\ 0 \leq x_1 \\ 0 \leq x_2 \leq 6 \\ x_3 \leq 0.5 \\ -3 \leq x_4\end{cases}$$
 
 - Ta cần biến đổi về dạng chuẩn (1)
 
